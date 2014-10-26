@@ -15,6 +15,7 @@ int totalBalls = 0;
 Sprite makerBall;
 Sprite saveButton;
 Sprite loadButton;
+Sprite newButton;
 List<Sprite> balls = new List<Sprite>();
 
 void main()
@@ -35,6 +36,7 @@ void main()
 	resourceManager.addBitmapData('tank', 'assets/images/tank.png');
 	resourceManager.addBitmapData('saveButton', 'assets/images/save-button.png');
 	resourceManager.addBitmapData('loadButton', 'assets/images/load-button.png');
+	resourceManager.addBitmapData('newButton', 'assets/images/new-button.png');
 	resourceManager.load().then((_)
 	{
 		BitmapData tankData = resourceManager.getBitmapData('tank');
@@ -74,6 +76,16 @@ void main()
 		loadButton.onMouseClick.listen((_)
 		{
 			loadGame();
+		});
+		
+		newButton = new Sprite();
+		newButton.addChild(new Bitmap(resourceManager.getBitmapData('newButton')));
+		newButton.x = loadButton.x - (newButton.width + 20);
+		newButton.y = loadButton.y;
+		stage.addChild(newButton);
+		newButton.onMouseClick.listen((_)
+		{
+			newGame();
 		});
 	});
 }
@@ -146,6 +158,11 @@ void loadGame()
 	}
 }
 
+void newGame()
+{
+	destroyAll();
+}
+
 class DraggableBall extends Sprite
 {
 	bool dragging = false;
@@ -166,18 +183,12 @@ class DraggableBall extends Sprite
     	{
     		dragging = true;
     		var index = parent.getChildIndex(this);
-    		print("index: $index, ${parent.numChildren}");
     		if(index < parent.numChildren - 1)
     		{
     			parent.setChildIndex(this, parent.numChildren - 1);
     		}
     		startDrag();
     		_controller.add(new Event("onStartDrag"));
-//    		dragSub = onEnterFrame.listen((e)
-//    		{
-//    			x = mouseX - mouseDownEvent.localX;
-//    			y = mouseY - mouseDownEvent.localY;
-//    		});
     	});
     	Function done = (_)
     	{
