@@ -2,4 +2,5 @@ name: LizardGame
 description: A sample web application
 dependencies:
   browser: any
+  frappe: any
   stagexl: any
