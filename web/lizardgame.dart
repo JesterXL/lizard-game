@@ -1,4 +1,5 @@
 import 'dart:html';
+import 'dart:async';
 import 'package:stagexl/stagexl.dart';
 
 CanvasElement canvas;
@@ -23,52 +24,54 @@ void main()
 	renderLoop = new RenderLoop();
 	renderLoop.addStage(stage);
 	
-	Shape spot1 = new Shape();
-	spot1.graphics.rectRound(0, 0, 100, 100, 6, 6);
-	spot1.graphics.fillColor(Color.Blue);
-	spot1.graphics.strokeColor(Color.White, 4);
-	spot1.alpha = 0.4;
-	spot1.x = 0;
-	spot1.y = 0;
-	
-	Shape spot2 = new Shape();
-	spot2.graphics.rect(2, 2, 2, 100);
-	spot2.graphics.fillColor(Color.Black);
-	spot2.x = 40;
-	stage.addChild(spot2);
-	
-	Shape spot3 = new Shape();
-	spot3.graphics.rect(2, 2, 2, 100);
-	spot3.graphics.fillColor(Color.Black);
-	spot3.x = 60;
-	stage.addChild(spot3);
-	
-	Sprite sprite1 = new Sprite();
-	stage.addChild(sprite1);
-	sprite1.addChild(spot1);
+	DraggableBall ball = getDraggableBall();
+	stage.addChild(ball);
+}
+
+Sprite getDraggableBall({num x: 0, num y: 0})
+{
+	DraggableBall ball = new DraggableBall();
+	ball.graphics.ellipse(0, 0, 40, 40);
+	ball.graphics.fillColor(Color.Blue);
+	ball.graphics.strokeColor(Color.Black, 1);
+	ball.alpha = 0.4;
+	ball.x = x;
+	ball.y = y;
+	return ball;
+}
+
+class DraggableBall extends Sprite
+{
 	bool dragging = false;
-	var sub;
-	sprite1.onMouseDown.listen((mouseDownEvent)
+	StreamSubscription dragSub;
+	
+	DraggableBall()
 	{
-		dragging = true;
-		print("mouseDownEvent.localX: ${mouseDownEvent.localX}, mouseX: ${mouseX}");
-		sub = sprite1.onEnterFrame.listen((e)
-		{
-//			sprite1.x = mouseX - sprite1.width / 2 + mouseDownEvent.localX;
-//			sprite1.y = mouseY - sprite1.height / 2 + mouseDownEvent.localY;
-			sprite1.x = mouseX - mouseDownEvent.localX;
-			sprite1.y = mouseY - mouseDownEvent.localY;
-		});
-	});
-	Function done = (_)
+		init();
+	}
+	
+	void init()
 	{
-		dragging = false;
-		if(sub != null)
-		{
-			sub.cancel();
-			sub = null;
-		}
-	};
-	sprite1.onMouseUp.listen(done);
-//	sprite1.onMouseOver.listen(done);
+		onMouseDown.listen((mouseDownEvent)
+    	{
+    		dragging = true;
+    		startDrag();
+//    		dragSub = onEnterFrame.listen((e)
+//    		{
+//    			x = mouseX - mouseDownEvent.localX;
+//    			y = mouseY - mouseDownEvent.localY;
+//    		});
+    	});
+    	Function done = (_)
+    	{
+    		dragging = false;
+    		stopDrag();
+    		if(dragSub != null)
+    		{
+    			dragSub.cancel();
+    			dragSub = null;
+    		}
+    	};
+    	onMouseUp.listen(done);
+	}
 }
