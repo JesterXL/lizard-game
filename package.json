@@ -1,0 +1,19 @@
+{
+  "name": "Lizard-Game",
+  "version": "0.0.0",
+  "description": "lizard-game ===========",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/JesterXL/lizard-game.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/JesterXL/lizard-game/issues"
+  },
+  "homepage": "https://github.com/JesterXL/lizard-game"
+}
