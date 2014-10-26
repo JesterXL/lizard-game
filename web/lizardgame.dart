@@ -11,12 +11,15 @@ ResourceManager resourceManager;
 int mouseX = 0;
 int mouseY = 0;
 int MAX_BALLS = 5;
-int totalBalls = 0;
+int MAX_SQUARES = 5;
 Sprite makerBall;
+Sprite makerSquare;
 Sprite saveButton;
 Sprite loadButton;
 Sprite newButton;
+Sprite holder;
 List<Sprite> balls = new List<Sprite>();
+List<Sprite> squares = new List<Sprite>();
 
 void main()
 {
@@ -39,6 +42,7 @@ void main()
 	resourceManager.addBitmapData('newButton', 'assets/images/new-button.png');
 	resourceManager.load().then((_)
 	{
+		
 		BitmapData tankData = resourceManager.getBitmapData('tank');
 		Bitmap tank = new Bitmap(tankData);
 		stage.addChild(tank);
@@ -56,6 +60,19 @@ void main()
 		makerBall.onMouseClick.listen((_)
 		{
 			makeNewBall();
+		});
+		
+		makerSquare = new Sprite();
+		makerSquare.graphics.rect(0, 0, 40, 40);
+		makerSquare.graphics.fillColor(Color.Blue);
+		makerSquare.graphics.strokeColor(Color.Black, 1);
+		makerSquare.alpha = 0.9;
+		makerSquare.x = 560;
+		makerSquare.y = 20;
+		stage.addChild(makerSquare);
+		makerSquare.onMouseClick.listen((_)
+		{
+			makeNewSquare();
 		});
 		
 		saveButton = new Sprite();
@@ -87,27 +104,47 @@ void main()
 		{
 			newGame();
 		});
+		
+		holder = new Sprite();
+        stage.addChild(holder);
 	});
 }
 
 void makeNewBall()
 {
-	if(totalBalls < MAX_BALLS)
+	if(balls.length < MAX_BALLS)
 	{
-		totalBalls++;
-		makeBall();
+		holder.addChild(makeBall());
+	}
+}
+
+void makeNewSquare()
+{
+	if(squares.length < MAX_SQUARES)
+	{
+		holder.addChild(makeSquare());
 	}
 }
 
 DraggableBall makeBall()
 {
 	DraggableBall ball = getDraggableBall();
-	stage.addChild(ball);
 	ball.x = makerBall.x;
 	ball.y = makerBall.y + 50;
 	balls.add(ball);
 	return ball;
 }
+
+DraggableBall makeSquare()
+{
+	DraggableBall square = getDraggableSquare();
+	square.x = makerSquare.x;
+	square.y = makerSquare.y + 50;
+	squares.add(square);
+	return square;
+}
+
+
 
 Sprite getDraggableBall({num x: 0, num y: 0})
 {
@@ -121,16 +158,55 @@ Sprite getDraggableBall({num x: 0, num y: 0})
 	return ball;
 }
 
+Sprite getDraggableSquare()
+{
+	DraggableBall ball = new DraggableBall();
+    ball.graphics.rect(0, 0, 40, 40);
+	ball.graphics.fillColor(Color.Blue);
+	ball.graphics.strokeColor(Color.Black, 2);
+	ball.alpha = 0.9;
+	return ball;
+}
+
+int orderByDepth(Sprite a, Sprite b)
+{
+	int aIndex = a.parent.getChildIndex(a);
+	int bIndex = b.parent.getChildIndex(b);
+	if(aIndex > bIndex)
+	{
+		return 1;
+	}
+	else if(aIndex < bIndex)
+	{
+		return -1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 void saveGame()
 {
 	var memento = {};
 	var ballObjects = [];
+	var squareObjects = [];
 	int index = 0;
-	balls.forEach((Sprite ball)
+	int len = balls.length;
+	
+	for(index = 0; index < len; index++)
 	{
-		ballObjects.add({"x": ball.x, "y": ball.y});
-	});
+		Sprite ball = balls[index];
+		ballObjects.add({"x": ball.x, "y": ball.y, "z": ball.parent.getChildIndex(ball)});
+	};
+	len = squares.length;
+	for(index = 0; index < len; index++)
+	{
+		Sprite square = squares[index];
+		squareObjects.add({"x": square.x, "y": square.y, "z": square.parent.getChildIndex(square)});
+	}
 	memento["balls"] = ballObjects;
+	memento["squares"] = squareObjects;
 	window.localStorage["saveGame"] = JSON.encode(memento);
 }
 
@@ -141,6 +217,11 @@ void destroyAll()
 		ball.removeFromParent();
 	});
 	balls.clear();
+	squares.forEach((Sprite square)
+	{
+		square.removeFromParent();
+	});
+	squares.clear();
 }
 
 void loadGame()
@@ -149,12 +230,56 @@ void loadGame()
 	{
 		var memento = JSON.decode(window.localStorage["saveGame"]);
 		destroyAll();
-		memento["balls"].forEach((obj)
+		
+		List balls = memento["balls"];
+		List squares = memento["squares"];
+		List preSortList = new List();
+		balls.forEach((ball)
 		{
-			DraggableBall ball = makeBall();
-			ball.x = obj["x"];
-			ball.y = obj["y"];
+			ball["type"] = "ball";
+			preSortList.add(ball);
 		});
+		squares.forEach((square)
+		{
+			square["type"] = "square";
+			preSortList.add(square);
+		});
+		preSortList.sort((a, b)
+		{
+			int aDepth = a["z"];
+			int bDepth = b["z"];
+			if(aDepth > bDepth)
+			{
+				return 1;
+			}
+			else if(aDepth < bDepth)
+			{
+				return -1;
+			}
+			else
+			{
+				return 0;
+			}
+		});
+				
+		int index;
+		int len = preSortList.length;
+		for(index = 0; index < len; index++)
+		{
+			Object memento = preSortList[index];
+			DraggableBall item;
+			if(memento["type"] == 'ball')
+			{
+				item = makeBall();
+			}
+			else if(memento["type"] == 'square')
+			{
+				item = makeSquare();
+			}
+			item.x = memento["x"];
+			item.y = memento["y"];
+			holder.addChild(item);
+		}
 	}
 }
 
