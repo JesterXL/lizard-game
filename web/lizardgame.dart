@@ -384,132 +384,40 @@ class TestBug extends Shape
 	num steering;
 	Point velocity;
 	Point target;
+	Point position;
 	num MAX_FORCE = 0.3;
-	num MAX_VELOCITY = 0.5;
+	num MAX_VELOCITY = 2;
+	num SLOWING_RADIUS = 20;
 	num mass = 20;
 	
 	TestBug(Point start, Point target)
 	{
 		x = start.x;
 		y = start.y;
+		position = new Point(x, y);
 		this.target = target;
 		graphics.rect(0, 0, 30, 10);
         graphics.fillColor(Color.Red);
     	graphics.strokeColor(Color.Black, 2);
     	alpha = 0.9;
     	velocity = new Point(MAX_VELOCITY, MAX_VELOCITY);
+    	truncate(velocity, MAX_VELOCITY);
     	
-    	Function normalize = (Point point)
-		{
-    		double l = sqrt(point.x * point.x + point.y * point.y);
-    		point.x /= l;
-    		point.y /= l;
-		};
-		
-		Function scaleBy = (Point point, num value)
-		{
-			point.x *= value;
-			point.y *= value;
-		};
-		
-		Function truncate = (Point point, num max)
-		{
-			num i;
-			if(point.magnitude != 0)
-			{
-				i = max / point.magnitude;
-			}
-			else
-			{
-				i = 0;
-			}
-			
-			i = i < 1.0 ? 1.0 : i;
-			print("i: $i");
-			scaleBy(point, i);
-		};
-            	
 		onEnterFrame.listen((_)
 		{
-			Point position = new Point(x, y);
-			if(position.magnitude.isNaN == true)
-			{
-				throw new Error();
-			}
-			Point desired = new Point(target.x - position.x, target.y - position.y);
-			if(desired.magnitude.isNaN == true)
-			{
-				throw new Error();
-			}
-			normalize(desired);
-			if(desired.magnitude.isNaN == true)
-			{
-				throw new Error();
-			}
-			scaleBy(desired, MAX_VELOCITY);
-			if(desired.x.isNaN == true)
-			{
-				throw new Error();
-			}
-			Point force = desired.subtract(velocity);
-			if(force.x.isNaN == true)
-			{
-				throw new Error();
-			}
-			truncate(force, MAX_FORCE);
-			if(force.x.isNaN == true)
-			{
-				throw new Error();
-			}
-			scaleBy(force, 1 / mass);
-			if(force.x.isNaN == true)
-			{
-				throw new Error();
-			}
-//			if(target.distanceTo(position.add(velocity)) < distance)
-//			{
-				
-				velocity = velocity.add(force);
-				truncate(velocity, MAX_VELOCITY);
-//	    		if(velocity.x > 0)
-//	    		{
-//	    			if(velocity.x > MAX_VELOCITY)
-//	    			{
-//	    				velocity.x = MAX_VELOCITY;
-//	    			}
-//	    		}
-//	    		else if(velocity.x < 0)
-//	    		{
-//	    			if(velocity.x < -(MAX_VELOCITY))
-//	    			{
-//	    				velocity.x = -(MAX_VELOCITY);
-//	    			}
-//	    		}
-//	    		
-//	    		if(velocity.y > 0)
-//	    		{
-//	    			if(velocity.y > MAX_VELOCITY)
-//	    			{
-//	    				velocity.y = MAX_VELOCITY;
-//	    			}
-//	    		}
-//	    		else if(velocity.y < 0)
-//	    		{
-//	    			if(velocity.y < -(MAX_VELOCITY))
-//	    			{
-//	    				velocity.y = -(MAX_VELOCITY);
-//	    			}
-//	    		}
-	    		
-	    		print("force: $force, velocity: $velocity");
-	    		position = position.add(velocity);
-//			}
-//			else
-//			{
-//				position.setTo(target.x, target.y);
-//			}
+			Point steering = seek(position, target);
+			truncate(steering, MAX_FORCE);
+			scaleBy(steering, 1 / mass);
+			velocity = velocity.add(steering);
+			truncate(velocity, MAX_VELOCITY);
+			position = position.add(velocity);
+			
 			x = position.x;
            	y = position.y;
+//           	if(x < 0 || x > stage.stageWidth || y < 0 || y > stage.stageHeight)
+//           	{
+//           		resetPosition(position, velocity, stage, steering, force);
+//           	}
 		});
 		
 		stage.onMouseClick.listen((MouseEvent event)
@@ -517,63 +425,66 @@ class TestBug extends Shape
 			target.setTo(event.stageX, event.stageY);
 		});
 	}
-}
-
-class MovingBug extends Shape
-{
-	num MAX_FORCE = 2.4;
-	num MAX_VELOCITY = 3;
-	Point position;
-	Point velocity;
-	Point target;
-	Point desired;
-	Point steering;
-	num mass;
 	
-	
-	MovingBug(Point start, Point target, num mass)
+	Point seek(Point position, Point target)
 	{
-		position = new Point(start.x, start.y);
-		velocity = new Point(-1, -2);
-		target = new Point(target.x, target.y);
-		desired = new Point(0, 0);
-		steering = new Point(0, 0);
-		this.mass = mass;
-		
-		truncate(velocity, MAX_VELOCITY);
-		
-		x = position.x;
-		y = position.y;
-		
-		graphics.rect(0, 0, 30, 10);
-    	graphics.fillColor(Color.Red);
-    	graphics.strokeColor(Color.Black, 2);
-    	alpha = 0.9;
-	}
-	
-	Point seek(Point target)
-	{
-		desired = target.distanceTo(position);
+		Point desired = new Point(target.x - position.x, target.y - position.y);
+		normalize(desired);
+		num distance = position.distanceTo(target);
+		if(distance <= SLOWING_RADIUS)
+		{
+			scaleBy(desired, MAX_VELOCITY * distance / SLOWING_RADIUS);
+		}
+		else
+		{
+			scaleBy(desired, MAX_VELOCITY);
+		}
 		Point force = desired.subtract(velocity);
 		return force;
 	}
 	
-	void truncate(Point point, num max)
+	void normalize(Point point)
 	{
-		num i = max / point.length;
-		i = i < 1.0 ? 1.0 : i;
+		double l = sqrt(point.x * point.x + point.y * point.y);
+		point.x /= l;
+		point.y /= l;
 	}
 	
-	void update()
+	void scaleBy(Point point, num value)
 	{
-		target = new Point(320, 240);
-		steering = seek(target);
-		truncate(steering, MAX_FORCE);
-		velocity = velocity.add(steering);
-		truncate(velocity, MAX_VELOCITY);
-		position = position.add(velocity);
+		point.x *= value;
+		point.y *= value;
+	}
+	
+	void truncate(Point point, num max)
+	{
+		num i;
+		if(point.magnitude != 0)
+		{
+			i = max / point.magnitude;
+		}
+		else
+		{
+			i = 0;
+		}
+		i = i < 1.0 ? i : 1.0;
+		scaleBy(point, i);
+	}
+	
+	void resetPosition(Point position, Point velocity, Stage stage, Point desired, Point steering)
+	{
+		position.x = stage.stageWidth / 2;
+		position.y = stage.stageHeight / 2;
+		
+		velocity.x = -1 * (new Random().nextDouble() < 0.5 ? -2 : 1);
+		velocity.y = -1 * (new Random().nextDouble() < 0.5 ? -2 : 1);
+		
+		truncate(velocity, MAX_VELOCITY * 0.5);
+		desired.setTo(0, 0);
+		steering.setTo(0, 0);
+		
 		x = position.x;
-		y = position.y;
+        y = position.y;
 	}
 }
 
