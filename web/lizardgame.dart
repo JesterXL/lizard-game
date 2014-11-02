@@ -385,9 +385,10 @@ class TestBug extends Shape
 	Point velocity;
 	Point target;
 	Point position;
+	Point fleeTarget;
 	num mass = 20;
 	num MAX_FORCE = 3;
-	num MAX_VELOCITY = 2;
+	num MAX_VELOCITY = 1;
 	num SLOWING_RADIUS = 200;
 	num CIRCLE_DISTANCE = 4;
 	num CIRCLE_RADIUS = 20;
@@ -406,6 +407,7 @@ class TestBug extends Shape
     	alpha = 0.9;
     	velocity = new Point(MAX_VELOCITY, MAX_VELOCITY);
     	truncate(velocity, MAX_VELOCITY);
+    	fleeTarget = new Point(500, 500);
     	
 		onEnterFrame.listen((_)
 		{
@@ -417,6 +419,18 @@ class TestBug extends Shape
 			velocity = velocity.add(steering);
 			truncate(velocity, MAX_VELOCITY);
 			position = position.add(velocity);
+			
+			if(fleeTarget != null)
+			{
+				fleeTarget.x = mouseX;
+				fleeTarget.y = mouseY;
+				Point fleeVelocity = flee(fleeTarget);
+				truncate(fleeVelocity, MAX_FORCE);
+                scaleBy(fleeVelocity, 1 / mass);
+                velocity = velocity.add(fleeVelocity);
+                truncate(velocity, MAX_VELOCITY);
+                position = position.add(velocity);
+			}
 			
 			x = position.x;
            	y = position.y;
@@ -464,6 +478,14 @@ class TestBug extends Shape
 		{
 			scaleBy(desired, MAX_VELOCITY);
 		}
+		Point force = desired.subtract(velocity);
+		return force;
+	}
+	
+	Point flee(Point fleeTarget)
+	{
+		Point desired = position.subtract(fleeTarget);
+		scaleBy(desired, MAX_VELOCITY);
 		Point force = desired.subtract(velocity);
 		return force;
 	}
