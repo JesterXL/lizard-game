@@ -202,7 +202,7 @@ Sprite getDraggableSquare()
 
 Shape getBug()
 {
-	TestBug bug = new TestBug(new Point(20, 20), new Point(400, 400));
+	TestBug bug = new TestBug(new Point(300, 300), new Point(400, 400));
 	return bug;
 }
 
@@ -385,10 +385,14 @@ class TestBug extends Shape
 	Point velocity;
 	Point target;
 	Point position;
-	num MAX_FORCE = 0.3;
-	num MAX_VELOCITY = 2;
-	num SLOWING_RADIUS = 20;
 	num mass = 20;
+	num MAX_FORCE = 3;
+	num MAX_VELOCITY = 2;
+	num SLOWING_RADIUS = 200;
+	num CIRCLE_DISTANCE = 4;
+	num CIRCLE_RADIUS = 20;
+	num wanderAngle = 0;
+	num ANGLE_CHANGE = 1;
 	
 	TestBug(Point start, Point target)
 	{
@@ -405,7 +409,9 @@ class TestBug extends Shape
     	
 		onEnterFrame.listen((_)
 		{
-			Point steering = seek(position, target);
+			
+//			Point steering = seek(position, target);
+			Point steering = wander();
 			truncate(steering, MAX_FORCE);
 			scaleBy(steering, 1 / mass);
 			velocity = velocity.add(steering);
@@ -424,6 +430,25 @@ class TestBug extends Shape
 		{
 			target.setTo(event.stageX, event.stageY);
 		});
+	}
+	
+	Point wander()
+	{
+		Point circle = velocity.clone();
+		scaleBy(circle, CIRCLE_DISTANCE);
+		Point displacement = new Point(0, -1);
+		scaleBy(displacement, CIRCLE_RADIUS);
+		setAngle(displacement, wanderAngle);
+		wanderAngle += (new Random().nextDouble() * ANGLE_CHANGE) - (ANGLE_CHANGE * 0.5);
+		Point wanderForce = circle.add(displacement);
+		return wanderForce;
+	}
+	
+	void setAngle(Point angle, num value)
+	{
+		num len = angle.magnitude;
+		angle.x = cos(value) * len;
+		angle.y = sin(value) * len;
 	}
 	
 	Point seek(Point position, Point target)
