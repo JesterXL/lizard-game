@@ -434,10 +434,13 @@ class TestBug extends Shape
 			
 			x = position.x;
            	y = position.y;
-//           	if(x < 0 || x > stage.stageWidth || y < 0 || y > stage.stageHeight)
-//           	{
-//           		resetPosition(position, velocity, stage, steering, force);
-//           	}
+           	if(x < 0 || x > stage.stageWidth || y < 0 || y > stage.stageHeight)
+           	{
+           		position.x = new Random().nextDouble() * stage.stageWidth;
+           		position.y = new Random().nextDouble() * stage.stageHeight;
+           		x = position.x;
+               	y = position.y;
+           	}
 		});
 		
 		stage.onMouseClick.listen((MouseEvent event)
@@ -518,21 +521,6 @@ class TestBug extends Shape
 		scaleBy(point, i);
 	}
 	
-	void resetPosition(Point position, Point velocity, Stage stage, Point desired, Point steering)
-	{
-		position.x = stage.stageWidth / 2;
-		position.y = stage.stageHeight / 2;
-		
-		velocity.x = -1 * (new Random().nextDouble() < 0.5 ? -2 : 1);
-		velocity.y = -1 * (new Random().nextDouble() < 0.5 ? -2 : 1);
-		
-		truncate(velocity, MAX_VELOCITY * 0.5);
-		desired.setTo(0, 0);
-		steering.setTo(0, 0);
-		
-		x = position.x;
-        y = position.y;
-	}
 }
 
 
